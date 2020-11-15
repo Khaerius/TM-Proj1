@@ -7,6 +7,8 @@
 .REG s2, string
 .REG s3, char
 .REG s8, bally
+.REG s9, leftpad
+.REG sA, rightpad
 .REG s4, counterx
 .REG s5, countery
 .REG s0, zero
@@ -27,6 +29,8 @@ OUT s7, int_mask
 EINT
 LOAD ballx, 20
 LOAD bally, 12
+LOAD leftpad, 12
+LOAD rightpad, 12
 LOAD counterx, 0
 LOAD countery, 0
 LOAD string, ceiling
@@ -38,7 +42,11 @@ int: FETCH char, string
 			COMP char, 10
 			JUMP Z, nxverse
 			COMP counterx, ballx
-			CALL Z, drawball 
+			CALL Z, drawball
+			COMP counterx, 0
+			CALL Z, drawlpad
+			COMP counterx, 40
+			CALL Z, drawrpad 
 			OUT char, uart0
 			ADD string, 1
 			ADD counterx, 1
@@ -63,6 +71,16 @@ drawball: COMP countery, bally
 JUMP NZ, skip
 LOAD char, 'o'
 skip: RET
+
+drawlpad: COMP countery, leftpad
+JUMP NZ, skip
+LOAD char, '|'
+RET
+
+drawrpad: COMP countery, rightpad
+JUMP NZ, skip
+LOAD char, '|'
+RET
 
 .CSEG 0x3FF
 JUMP int
