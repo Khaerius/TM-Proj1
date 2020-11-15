@@ -63,6 +63,7 @@ endif: COMP countery, 24
 JUMP NZ, endt
 LOAD countery, 0
 LOAD string, ceiling
+CALL moveball
 JUMP end
 endt: LOAD string, space
 JUMP end
@@ -80,6 +81,9 @@ RET
 drawrpad: COMP countery, rightpad
 JUMP NZ, skip
 LOAD char, '|'
+RET
+
+moveball: ADD ballx, 1
 RET
 
 .CSEG 0x3FF
