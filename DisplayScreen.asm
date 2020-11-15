@@ -3,7 +3,10 @@
 .PORT uart0_mask, 0x62
 .PORT int_mask, 0xE1
 .PORT int_status, 0xE0
-.REG s1, ball
+.REG s1, ballx
+.REG s2, string
+.REG s3, char
+.REG s8, bally
 .REG s4, counterx
 .REG s5, countery
 .REG s0, zero
@@ -11,7 +14,9 @@
 .CONST finish, 68
 
 .DSEG
-space: .DB " --------------------- ",13,10, "                     ",13,10,"                     ",13,10,"                     ",13,10," --------------------- ",2
+ceiling: .DB "-----------------------------------------",13,10
+space: .DB "                                         ",13,10
+floor: .DB "-----------------------------------------[H",10
 
 
 .CSEG
@@ -20,30 +25,44 @@ LOAD s6, 0b00000001
 LOAD zero, 0
 OUT s7, int_mask
 EINT
-LOAD ball, 52
+LOAD ballx, 20
+LOAD bally, 12
 LOAD counterx, 0
 LOAD countery, 0
-LOAD s2, space
+LOAD string, ceiling
 OUT s6, uart0_mask
 loop: JUMP loop
 
 
-int: FETCH s3, s2
-			COMP s3, 2
-			JUMP Z, mask
-			COMP counter, ball
+int: FETCH char, string
+			COMP char, 10
+			JUMP Z, nxverse
+			COMP counterx, ballx
 			CALL Z, drawball 
-			OUT s3, uart0
-			end: ADD s2, 1
-			ADD counter, 1
-			OUT zero, int_status
+			OUT char, uart0
+			ADD string, 1
+			ADD counterx, 1
+			end: OUT zero, int_status
 			RETI
 
-mask: OUT zero, uart0_mask
+nxverse: ADD countery, 1
+LOAD counterx, 0
+COMP countery, 23
+JUMP NZ, endif
+LOAD string, floor
+JUMP end
+endif: COMP countery, 24
+JUMP NZ, endt
+LOAD countery, 0
+LOAD string, ceiling
+JUMP end
+endt: LOAD string, space
 JUMP end
 
-drawball: LOAD s3, 'o'
-RET
+drawball: COMP countery, bally
+JUMP NZ, skip
+LOAD char, 'o'
+skip: RET
 
 .CSEG 0x3FF
 JUMP int
