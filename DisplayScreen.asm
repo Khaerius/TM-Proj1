@@ -6,13 +6,16 @@
 .REG s1, ballx
 .REG s2, string
 .REG s3, char
+.REG s4, counterx
+.REG s5, countery
+.REG s6, tmp
 .REG s8, bally
 .REG s9, leftpad
 .REG sA, rightpad
-.REG s4, counterx
-.REG s5, countery
+.REG sB, movex
+.REG sC, movey
 .REG s0, zero
-.REG sF, flag
+.REG sF, flagdir
 .CONST finish, 68
 
 .DSEG
@@ -23,7 +26,7 @@ floor: .DB "-----------------------------------------[H",10
 
 .CSEG
 LOAD s7, 0b00000100
-LOAD s6, 0b00000001
+LOAD tmp, 0b00000001
 LOAD zero, 0
 OUT s7, int_mask
 EINT
@@ -33,8 +36,11 @@ LOAD leftpad, 12
 LOAD rightpad, 12
 LOAD counterx, 0
 LOAD countery, 0
+LOAD movex, 1
+LOAD movey, 0
+LOAD flagdir, 1
 LOAD string, ceiling
-OUT s6, uart0_mask
+OUT tmp, uart0_mask
 loop: JUMP loop
 
 
@@ -63,6 +69,7 @@ endif: COMP countery, 24
 JUMP NZ, endt
 LOAD countery, 0
 LOAD string, ceiling
+CALL checkpos
 CALL moveball
 JUMP end
 endt: LOAD string, space
@@ -83,7 +90,34 @@ JUMP NZ, skip
 LOAD char, '|'
 RET
 
-moveball: ADD ballx, 1
+checkpos: COMP bally, 1
+JUMP Z, checkcontl
+COMP bally, 23
+JUMP Z, checkcontl
+COMP ballx, 1
+JUMP Z, checkcontl
+COMP ballx, 39
+JUMP Z, checkcontr
+RET
+
+checkcontl: COMP bally, leftpad
+JUMP NZ, skip
+LOAD flagdir, 1
+RET
+
+checkcontr: COMP bally, rightpad
+JUMP NZ, skip
+LOAD flagdir, 0
+RET
+
+moveball: COMP flagdir, 1
+JUMP NZ, else
+ADD ballx, movex
+ADD bally, movey
+else: COMP flagdir, 0
+JUMP NZ, skip
+SUB ballx, movex
+SUB bally, movey
 RET
 
 .CSEG 0x3FF
