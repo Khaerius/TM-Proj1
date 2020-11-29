@@ -3,6 +3,8 @@
  .PORT uart0_mask, 0x62
  .PORT int_mask, 0xE1
  .PORT int_status, 0xE0
+ .PORT joy, 0x11 ; for tests only
+ .PORT joy_mask, 0x12 ; for tests only
  .REG s1, ballx
  .REG s2, string
  .REG s3, char
@@ -25,10 +27,11 @@
  
  
  .CSEG
- LOAD s7, 0b00000100
- LOAD tmp, 0b00000001
- OUT s7, int_mask
  EINT
+ LOAD tmp, 0b00000101 ;remove basic joystick interupts
+ OUT tmp, int_mask
+ LOAD tmp, 0b00111100
+ OUT tmp, joy_mask
  LOAD ballx, 20
  LOAD bally, 12
  LOAD leftpad, 12
@@ -39,11 +42,16 @@
  LOAD scorep1, zero
  LOAD scorep2, zero
  LOAD string, ceiling
+ LOAD tmp, 1
  OUT tmp, uart0_mask
  loop: JUMP loop
  
  
  int: 
+		IN tmp, int_status
+		TEST tmp, 1
+		JUMP NZ, movePad
+ print:
 		FETCH char, string
 		COMP char, 10
 		JUMP Z, nxverse
@@ -51,8 +59,39 @@
 		CALL drawlpad
 		CALL drawrpad 
 		CALL drawNextSign
-		end: OUT tmp, int_status
+		end: LOAD tmp, 0
+		OUT tmp, int_status	; tutaj raczej odjac tylko 1 za joysticka
 		RETI
+ 
+ movePad:
+		IN tmp, int_mask
+		TEST tmp, 1
+		JUMP Z, print
+ 
+		IN tmp, joy
+  		TEST tmp, 4
+ 		JUMP Z, isDown
+		SUB rightpad, 1
+		JUMP isRight
+ 		isDown: 
+			TEST tmp, 16
+			JUMP Z, isRight
+			ADD rightpad, 1
+ 		isRight: 
+			TEST tmp, 8
+			JUMP Z, isLeft
+			ADD leftpad, 1
+			JUMP endMovePad
+ 		isLeft: 
+			TEST tmp, 32
+			JUMP Z, endMovePad
+			SUB leftpad, 1
+
+		endMovePad:
+			IN tmp, int_mask
+			AND tmp, 0b11111110	; turn off joystick interrupts
+			OUT tmp, int_mask
+		JUMP end
  
  nxverse: 
 		ADD countery, 1
@@ -103,6 +142,9 @@
 		LOAD string, ceiling
 		CALL checkpos
 		CALL moveball
+		IN tmp, int_mask
+		OR tmp, 1	; turn on joystick interrupts
+		OUT tmp, int_mask
 		JUMP end
  
  checkpos: 
